@@ -3,58 +3,50 @@ import seaborn as sns
 import matplotlib.pyplot as plt
 import numpy as np
 
-# 1
-df = None
+# Importar os dados
+df = pd.read_csv('boilerplate-medical-data-visualizer/medical_examination.csv')
 
-# 2
-df['overweight'] = None
+# 1. Adicionar a coluna 'overweight'
+df['overweight'] = (df['weight'] / ((df['height'] / 100) ** 2)).apply(lambda x: 1 if x > 25 else 0)
 
-# 3
+# 2. Normalizar os dados de colesterol e glicose
+df['cholesterol'] = df['cholesterol'].apply(lambda x: 0 if x == 1 else 1)
+df['gluc'] = df['gluc'].apply(lambda x: 0 if x == 1 else 1)
 
-
-# 4
+# Função para desenhar o gráfico categórico
 def draw_cat_plot():
-    # 5
-    df_cat = None
-
-
-    # 6
-    df_cat = None
+    # 3. Criar DataFrame para gráfico
+    df_cat = pd.melt(df, id_vars=['cardio'], value_vars=['cholesterol', 'gluc', 'smoke', 'alco', 'active', 'overweight'])
     
-
-    # 7
-
-
-
-    # 8
-    fig = None
-
-
-    # 9
+    # 4. Agrupar e reformular dados
+    df_cat = df_cat.groupby(['cardio', 'variable', 'value']).size().reset_index(name='total')
+    
+    # 5. Desenhar gráfico com seaborn
+    fig = sns.catplot(x='variable', y='total', hue='value', col='cardio', data=df_cat, kind='bar').fig
     fig.savefig('catplot.png')
     return fig
 
-
-# 10
+# Função para desenhar o Mapa de Calor
 def draw_heat_map():
-    # 11
-    df_heat = None
+    # 6. Limpar os dados
+    df_heat = df[(df['ap_lo'] <= df['ap_hi']) & 
+                 (df['height'] >= df['height'].quantile(0.025)) & 
+                 (df['height'] <= df['height'].quantile(0.975)) &
+                 (df['weight'] >= df['weight'].quantile(0.025)) & 
+                 (df['weight'] <= df['weight'].quantile(0.975))]
+    
+    # 7. Calcular a matriz de correlação
+    corr = df_heat.corr()
 
-    # 12
-    corr = None
+    # 8. Gerar uma máscara para o triângulo superior
+    mask = np.triu(np.ones_like(corr, dtype=bool))
 
-    # 13
-    mask = None
+    # 9. Configurar a figura do matplotlib
+    fig, ax = plt.subplots(figsize=(12, 12))
 
+    # 10. Desenhar o Mapa de Calor
+    sns.heatmap(corr, mask=mask, annot=True, fmt='.1f', ax=ax, cmap='coolwarm', square=True, linewidths=0.5)
 
-
-    # 14
-    fig, ax = None
-
-    # 15
-
-
-
-    # 16
+    # Salvar figura e retornar
     fig.savefig('heatmap.png')
     return fig
